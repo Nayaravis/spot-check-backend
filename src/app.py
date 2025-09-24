@@ -1,21 +1,24 @@
+from flask import Flask, make_response
+from flask_migrate import Migrate
+from flask_restful import Api
+from werkzeug.exceptions import NotFound
+
 from endpoints import (
     Users, UserByID,
     Places, PlaceByID,
     Reviews, ReviewByID,
     Favorites, FavoriteByID
 )
-from flask import Flask, make_response
-from flask_restful import Api
-# from models import db
-from werkzeug.exceptions import NotFound
+from models import db
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = True
-# db.init_app(app)
+db.init_app(app)
 
 api = Api(app)
+migrate = Migrate(app, db)
 
 @app.errorhandler(NotFound)
 def handle_not_found(e):
