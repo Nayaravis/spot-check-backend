@@ -3,18 +3,26 @@ from endpoints import (
     Places, PlaceByID,
     Reviews, ReviewByID
 )
-from flask import Flask
+from flask import Flask, make_response
 from flask_restful import Api
-from models import db
+# from models import db
+from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
-app.comfig["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = True
-db.init_app(app)
+# db.init_app(app)
 
 api = Api(app)
 
+@app.errorhandler(NotFound)
+def handle_not_found(e):
+    return make_response(
+        "Not Found: The requested resource does not exist.",
+        404,
+        {"Content-Type": "application/json"}
+    )
 
 api.add_resource(Users, "/users")
 api.add_resource(UserByID, "/users/<int:id>")
