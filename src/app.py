@@ -1,5 +1,6 @@
 from endpoints import (
-    Users, UserByID
+    Users, UserByID,
+    Places, PlaceByID
 )
 from flask import Flask
 from flask_restful import Api
@@ -16,3 +17,5 @@ api = Api(app)
 
 api.add_resource(Users, "/users")
 api.add_resource(UserByID, "/users/<int:id>")
+api.add_resource(Places, "/places")
+api.add_resource(PlaceByID, "/places/<int:id>")
