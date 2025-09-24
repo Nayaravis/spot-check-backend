@@ -16,4 +16,16 @@ class UserByID(Resource):
     def delete(self, id):
         pass
 
+
+class Places(Resource):
+    def get(self):
+        pass
+
+    def post(self):
+        pass
+
+
+class PlaceByID(Resource):
+    def get(self):
+        pass
     
