@@ -1,9 +1,11 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_serializer import SerializerMixin
 
 db = SQLAlchemy()
 
-class User(db.Model):
+class User(db.Model, SerializerMixin):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -19,7 +21,9 @@ class User(db.Model):
     reviews = db.relationship('Review', backref='user', cascade='all, delete-orphan')
     favorites = db.relationship('UserFavorite', backref='user', cascade='all, delete-orphan')
 
-class Place(db.Model):
+    serialize_rules = ("-reviews.user", "-favorites.user")
+
+class Place(db.Model, SerializerMixin):
     __tablename__ = 'places'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -31,16 +35,17 @@ class Place(db.Model):
     category = db.Column(db.String(100))
     latitude = db.Column(db.Numeric(10, 8))
     longitude = db.Column(db.Numeric(11, 8))
-    google_rating = db.Column(db.Numeric(2, 1))
+    rating = db.Column(db.Integer)
     price_level = db.Column(db.Integer)
     photo_reference = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     reviews = db.relationship('Review', backref='place', cascade='all, delete-orphan')
-    favorites = db.relationship('UserFavorite', backref='place', cascade='all, delete-orphan')
 
-class Review(db.Model):
+    serialize_rules = ("-reviews.place",)
+
+class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -53,7 +58,8 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class UserFavorite(db.Model):
+
+class UserFavorite(db.Model, SerializerMixin):
     __tablename__ = 'user_favorites'
     
     id = db.Column(db.Integer, primary_key=True)
