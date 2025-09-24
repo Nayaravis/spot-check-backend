@@ -1,0 +1,114 @@
+from flask import Flask
+from models import db, User, Place, Review
+from datetime import date
+
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+with app.app_context():
+    # Clear existing data
+    db.drop_all()
+    db.create_all()
+    
+    # Create users
+    from werkzeug.security import generate_password_hash
+    
+    user1 = User(
+        email='john@example.com', 
+        username='john_doe', 
+        first_name='John', 
+        last_name='Doe',
+        password_hash=generate_password_hash('password123')
+    )
+    
+    user2 = User(
+        email='jane@example.com', 
+        username='jane_smith', 
+        first_name='Jane', 
+        last_name='Smith',
+        password_hash=generate_password_hash('password123')
+    )
+    
+    db.session.add_all([user1, user2])
+    db.session.commit()
+    
+    # Create places
+    place1 = Place(
+        google_place_id='place_001',
+        name='Central Park Cafe',
+        address='123 Park Ave, New York, NY',
+        category='Restaurant',
+        latitude=40.7829,
+        longitude=-73.9654,
+        google_rating=4.2
+    )
+    
+    place2 = Place(
+        google_place_id='place_002',
+        name='Brooklyn Bridge View',
+        address='Brooklyn Bridge, New York, NY',
+        category='Tourist Attraction',
+        latitude=40.7061,
+        longitude=-73.9969,
+        google_rating=4.8
+    )
+    
+    place3 = Place(
+        google_place_id='place_003',
+        name='Times Square Deli',
+        address='Times Square, New York, NY',
+        category='Food',
+        latitude=40.7580,
+        longitude=-73.9855,
+        google_rating=3.9
+    )
+    
+    db.session.add_all([place1, place2, place3])
+    db.session.commit()
+    
+    # Create reviews
+    review1 = Review(
+        user_id=user1.id,
+        place_id=place1.id,
+        rating=5,
+        title='Amazing coffee!',
+        content='Great atmosphere and excellent coffee. Will definitely come back.',
+        visit_date=date(2024, 1, 15)
+    )
+    
+    review2 = Review(
+        user_id=user2.id,
+        place_id=place1.id,
+        rating=4,
+        title='Good food',
+        content='Nice place for brunch. Service was friendly.',
+        visit_date=date(2024, 1, 20)
+    )
+    
+    review3 = Review(
+        user_id=user1.id,
+        place_id=place2.id,
+        rating=5,
+        title='Breathtaking views',
+        content='Perfect spot for photos. The sunset view is incredible.',
+        visit_date=date(2024, 1, 10)
+    )
+    
+    review4 = Review(
+        user_id=user2.id,
+        place_id=place3.id,
+        rating=3,
+        title='Average deli',
+        content='Food was okay, nothing special. Convenient location though.',
+        visit_date=date(2024, 1, 25)
+    )
+    
+    db.session.add_all([review1, review2, review3, review4])
+    db.session.commit()
+    
+    print("Database seeded successfully!")
+    print(f"Created {User.query.count()} users")
+    print(f"Created {Place.query.count()} places")
+    print(f"Created {Review.query.count()} reviews")
