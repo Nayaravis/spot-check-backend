@@ -29,6 +29,13 @@ class PlaceByID(Resource):
     def get(self):
         pass
 
+class Favorites(Resource):
+    def get(self, user_id):
+        pass
+
+class FavoriteByID(Resource):
+    def delete(self, id):
+        pass
 
 class Reviews(Resource):
     def post(self, place_id): # uses the place's ID to append a new 'Review'
