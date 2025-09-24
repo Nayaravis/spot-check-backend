@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -19,12 +18,6 @@ class User(db.Model):
     
     reviews = db.relationship('Review', backref='user', cascade='all, delete-orphan')
     favorites = db.relationship('UserFavorite', backref='user', cascade='all, delete-orphan')
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-    
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
 
 class Place(db.Model):
     __tablename__ = 'places'
