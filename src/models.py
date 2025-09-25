@@ -1,4 +1,3 @@
-from datetime import datetime
 import re
 
 from flask_sqlalchemy import SQLAlchemy
@@ -17,13 +16,13 @@ class User(db.Model, SerializerMixin):
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     profile_picture_url = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
-    reviews = db.relationship('Review', backref='user', cascade='all, delete-orphan')
-    favorites = db.relationship('UserFavorite', backref='user', cascade='all, delete-orphan')
+    reviews = db.relationship('Review', cascade='all, delete-orphan')
+    favorites = db.relationship('UserFavorite', cascade='all, delete-orphan')
 
-    serialize_rules = ("-reviews.user", "-favorites.user")
+    serialize_rules = ("-favorites.user", "-reviews.user", "-reviews.place")
     
     @validates('email')
     def validate_email(self, key, email):
@@ -61,6 +60,7 @@ class User(db.Model, SerializerMixin):
             raise ValueError('Profile picture URL must be a valid URL')
         return url
 
+
 class Place(db.Model, SerializerMixin):
     __tablename__ = 'places'
     
@@ -76,8 +76,8 @@ class Place(db.Model, SerializerMixin):
     rating = db.Column(db.Integer)
     price_level = db.Column(db.Integer)
     photo_reference = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
     reviews = db.relationship('Review', backref='place', cascade='all, delete-orphan')
 
@@ -147,8 +147,8 @@ class Review(db.Model, SerializerMixin):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text)
     visit_date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now()
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
     @validates('rating')
     def validate_rating(self, key, rating):
@@ -175,6 +175,6 @@ class UserFavorite(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
     
     __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
