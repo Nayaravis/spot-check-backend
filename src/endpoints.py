@@ -117,7 +117,7 @@ class Places(Resource):
               "center": {
                 "latitude": float(request.args.get("latitude")),   
                 "longitude": float(request.args.get("longitude"))}, 
-              "radius": 500.0
+              "radius": 10000.0
             }
           }
         }
