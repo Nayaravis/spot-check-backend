@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
 
@@ -15,13 +13,14 @@ class User(db.Model, SerializerMixin):
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     profile_picture_url = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
-    reviews = db.relationship('Review', backref='user', cascade='all, delete-orphan')
-    favorites = db.relationship('UserFavorite', backref='user', cascade='all, delete-orphan')
+    reviews = db.relationship('Review', cascade='all, delete-orphan')
+    favorites = db.relationship('UserFavorite', cascade='all, delete-orphan')
 
-    serialize_rules = ("-reviews.user", "-favorites.user")
+    serialize_rules = ("-reviews.place", "-favorites.user", "-reviews.user", "-reviews.place")
+
 
 class Place(db.Model, SerializerMixin):
     __tablename__ = 'places'
@@ -38,8 +37,8 @@ class Place(db.Model, SerializerMixin):
     rating = db.Column(db.Integer)
     price_level = db.Column(db.Integer)
     photo_reference = db.Column(db.String(500))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
     reviews = db.relationship('Review', backref='place', cascade='all, delete-orphan')
 
@@ -55,8 +54,8 @@ class Review(db.Model, SerializerMixin):
     title = db.Column(db.String(200))
     content = db.Column(db.Text)
     visit_date = db.Column(db.Date)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
 
 
 class UserFavorite(db.Model, SerializerMixin):
@@ -65,6 +64,6 @@ class UserFavorite(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=db.func.now())
     
     __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
