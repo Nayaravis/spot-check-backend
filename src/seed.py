@@ -1,16 +1,14 @@
-from flask import Flask
-from models import db, User, Place, Review
 from datetime import date
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db.init_app(app)
+from app import app
+from models import db, User, Place, Review
 
 with app.app_context():
     # Clear existing data
-    db.drop_all()
-    db.create_all()
+    User.query.delete()
+    Place.query.delete()
+    Review.query.delete()
+    Review.query.delete()
     
     # Create users
     from werkzeug.security import generate_password_hash
@@ -42,7 +40,7 @@ with app.app_context():
         category='Restaurant',
         latitude=40.7829,
         longitude=-73.9654,
-        google_rating=4.2
+        rating=4.2
     )
     
     place2 = Place(
@@ -52,7 +50,7 @@ with app.app_context():
         category='Tourist Attraction',
         latitude=40.7061,
         longitude=-73.9969,
-        google_rating=4.8
+        rating=4.8
     )
     
     place3 = Place(
@@ -62,7 +60,7 @@ with app.app_context():
         category='Food',
         latitude=40.7580,
         longitude=-73.9855,
-        google_rating=3.9
+        rating=3.9
     )
     
     db.session.add_all([place1, place2, place3])
