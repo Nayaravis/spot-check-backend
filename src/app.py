@@ -2,6 +2,7 @@ from flask import Flask, make_response
 from flask_migrate import Migrate
 from flask_restful import Api
 from werkzeug.exceptions import NotFound
+from flask_cors import CORS
 
 from endpoints import (
     Users, UserByID,
@@ -16,6 +17,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spotcheck.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = True
 db.init_app(app)
+
+CORS(app)
 
 api = Api(app)
 migrate = Migrate(app, db)

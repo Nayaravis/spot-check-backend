@@ -115,15 +115,15 @@ class Places(Resource):
           "locationRestriction": {
             "circle": {
               "center": {
-                "latitude": -1.3005153,   ####
-                "longitude": 36.7844783}, ####    to be replaced with browser location data
+                "latitude": float(request.args.get("latitude")),   
+                "longitude": float(request.args.get("longitude"))}, 
               "radius": 500.0
             }
           }
         }
 
         response = requests.post("https://places.googleapis.com/v1/places:searchNearby", json=request_obj, headers={
-            "Content-Type": "applicaiton/json",
+            "Content-Type": "application/json",
             "X-Goog-FieldMask": "places.displayName",
             "X-Goog-Api-Key": SECRET_KEY,
             "X-Goog-FieldMask": "places.displayName,places.postalAddress,places.id,places.iconBackgroundColor,places.googleMapsUri,places.nationalPhoneNumber,places.priceLevel,places.types,places.websiteUri,places.photos"
@@ -137,7 +137,7 @@ class Places(Resource):
     def post(self):
         request_body = request.get_json()
         reviewed_place = Place(
-            google_place_id=request["google_place_id"],
+            google_place_id=request["place_id"],
             name=request_body["name"],
             address=request_body["address"],
             phone=request_body["phone"],
