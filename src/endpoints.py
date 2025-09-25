@@ -1,7 +1,14 @@
+import json
+import os
+
+from dotenv import load_dotenv
 from flask_restful import Resource
 from flask import request, make_response
+import requests
 
 from models import db, User, Place, Review, UserFavorite
+
+load_dotenv(".env")
 
 user_excludes = ("-reviews", "-favorites")
 
@@ -101,7 +108,31 @@ class UserByID(Resource):
 class Places(Resource):
     # implement fetching place data from the Google Places API
     def get(self):
-        pass
+        SECRET_KEY=os.getenv("GOOGLE_CLOUD_API_KEY")
+        request_obj = {
+          "includedTypes": ["restaurant"],
+          "maxResultCount": 10,
+          "locationRestriction": {
+            "circle": {
+              "center": {
+                "latitude": -1.3005153,   ####
+                "longitude": 36.7844783}, ####    to be replaced with browser location data
+              "radius": 500.0
+            }
+          }
+        }
+
+        response = requests.post("https://places.googleapis.com/v1/places:searchNearby", json=request_obj, headers={
+            "Content-Type": "applicaiton/json",
+            "X-Goog-FieldMask": "places.displayName",
+            "X-Goog-Api-Key": SECRET_KEY,
+            "X-Goog-FieldMask": "places.displayName,places.postalAddress,places.id,places.iconBackgroundColor,places.googleMapsUri,places.nationalPhoneNumber,places.priceLevel,places.types,places.websiteUri,places.photos"
+        })
+
+        return make_response(
+            json.loads(response.content),
+            200
+        )
 
     def post(self):
         request_body = request.get_json()
