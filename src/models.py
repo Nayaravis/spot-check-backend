@@ -177,4 +177,4 @@ class UserFavorite(db.Model, SerializerMixin):
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
+    __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
