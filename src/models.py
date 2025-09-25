@@ -1,6 +1,8 @@
 from datetime import datetime
+import re
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import validates
 from sqlalchemy_serializer import SerializerMixin
 
 db = SQLAlchemy()
@@ -22,6 +24,42 @@ class User(db.Model, SerializerMixin):
     favorites = db.relationship('UserFavorite', backref='user', cascade='all, delete-orphan')
 
     serialize_rules = ("-reviews.user", "-favorites.user")
+    
+    @validates('email')
+    def validate_email(self, key, email):
+        if not email or not email.strip():
+            raise ValueError('Email is required')
+        if len(email) > 255:
+            raise ValueError('Email must be 255 characters or less')
+        if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+            raise ValueError('Invalid email format')
+        return email.strip()
+    
+    @validates('username')
+    def validate_username(self, key, username):
+        if not username or not username.strip():
+            raise ValueError('Username is required')
+        if len(username) > 100:
+            raise ValueError('Username must be 100 characters or less')
+        return username.strip()
+    
+    @validates('password_hash')
+    def validate_password_hash(self, key, password_hash):
+        if not password_hash:
+            raise ValueError('Password hash is required')
+        return password_hash
+    
+    @validates('first_name', 'last_name')
+    def validate_names(self, key, name):
+        if name and len(name) > 100:
+            raise ValueError(f'{key} must be 100 characters or less')
+        return name.strip() if name else name
+    
+    @validates('profile_picture_url')
+    def validate_profile_picture_url(self, key, url):
+        if url and not re.match(r'^https?://', url):
+            raise ValueError('Profile picture URL must be a valid URL')
+        return url
 
 class Place(db.Model, SerializerMixin):
     __tablename__ = 'places'
@@ -33,8 +71,8 @@ class Place(db.Model, SerializerMixin):
     phone = db.Column(db.String(50))
     website = db.Column(db.String(500))
     category = db.Column(db.String(100))
-    latitude = db.Column(db.Numeric(10, 8))
-    longitude = db.Column(db.Numeric(11, 8))
+    latitude = db.Column(db.Numeric(10, 8), nullable=False)
+    longitude = db.Column(db.Numeric(11, 8), nullable=False)
     rating = db.Column(db.Integer)
     price_level = db.Column(db.Integer)
     photo_reference = db.Column(db.String(500))
@@ -44,6 +82,60 @@ class Place(db.Model, SerializerMixin):
     reviews = db.relationship('Review', backref='place', cascade='all, delete-orphan')
 
     serialize_rules = ("-reviews.place",)
+    
+    @validates('google_place_id')
+    def validate_google_place_id(self, key, place_id):
+        if not place_id or not place_id.strip():
+            raise ValueError('Google place ID is required')
+        return place_id.strip()
+    
+    @validates('name')
+    def validate_name(self, key, name):
+        if not name or not name.strip():
+            raise ValueError('Name is required')
+        return name.strip()
+    
+    @validates('phone')
+    def validate_phone(self, key, phone):
+        if phone and not re.match(r'^[\d\s\-\+\(\)]+$', phone):
+            raise ValueError('Invalid phone number format')
+        return phone
+    
+    @validates('website')
+    def validate_website(self, key, website):
+        if website and not re.match(r'^https?://', website):
+            raise ValueError('Website must be a valid URL')
+        return website
+    
+    @validates('latitude')
+    def validate_latitude(self, key, latitude):
+        if latitude is not None and (latitude < -90 or latitude > 90):
+            raise ValueError('Latitude must be between -90 and 90')
+        return latitude
+    
+    @validates('longitude')
+    def validate_longitude(self, key, longitude):
+        if longitude is not None and (longitude < -180 or longitude > 180):
+            raise ValueError('Longitude must be between -180 and 180')
+        return longitude
+    
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if rating is not None and (rating < 0 or rating > 5):
+            raise ValueError('Rating must be between 0 and 5')
+        return rating
+    
+    @validates('price_level')
+    def validate_price_level(self, key, price_level):
+        if price_level is not None and (price_level < 1 or price_level > 4):
+            raise ValueError('Price level must be between 1 and 4')
+        return price_level
+    
+    @validates('photo_reference')
+    def validate_photo_reference(self, key, photo_ref):
+        if photo_ref and not photo_ref.strip():
+            raise ValueError('Photo reference cannot be empty string')
+        return photo_ref.strip() if photo_ref else photo_ref
 
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
@@ -52,11 +144,29 @@ class Review(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
-    title = db.Column(db.String(200))
+    title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text)
-    visit_date = db.Column(db.Date)
+    visit_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if rating is None or rating < 1 or rating > 5:
+            raise ValueError('Rating must be between 1 and 5')
+        return rating
+    
+    @validates('title')
+    def validate_title(self, key, title):
+        if not title or not title.strip():
+            raise ValueError('Title is required')
+        return title.strip()
+    
+    @validates('visit_date')
+    def validate_visit_date(self, key, visit_date):
+        if not visit_date:
+            raise ValueError('Visit date is required')
+        return visit_date
 
 
 class UserFavorite(db.Model, SerializerMixin):
@@ -67,4 +177,4 @@ class UserFavorite(db.Model, SerializerMixin):
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
+    # __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
