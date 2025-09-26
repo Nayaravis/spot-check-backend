@@ -48,7 +48,7 @@ def generate_jwt_token(user_id):
     }
     
     # Get secret key from environment or use a default
-    secret_key = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+    secret_key = os.getenv('JWT_SECRET_KEY', 'id0nth@ve1navisayara@gmail.com')
     token = jwt.encode(payload, secret_key, algorithm='HS256')
     return token
 
