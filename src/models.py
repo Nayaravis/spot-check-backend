@@ -1,4 +1,5 @@
 import re
+import bcrypt
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import validates
@@ -59,6 +60,23 @@ class User(db.Model, SerializerMixin):
         if url and not re.match(r'^https?://', url):
             raise ValueError('Profile picture URL must be a valid URL')
         return url
+    
+    def set_password(self, password):
+        """Hash and set the user's password"""
+        if not password:
+            raise ValueError('Password is required')
+        if len(password) < 6:
+            raise ValueError('Password must be at least 6 characters long')
+        
+        # Generate salt and hash password
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    
+    def check_password(self, password):
+        """Check if the provided password matches the stored hash"""
+        if not password or not self.password_hash:
+            return False
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
 
 class Place(db.Model, SerializerMixin):
