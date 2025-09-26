@@ -199,5 +199,10 @@ class UserFavorite(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey('places.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.now())
+
+    place = db.relationship('Place', backref='user_favorites')
+    user = db.relationship('User', backref='user_favorites')
+
+    serialize_rules = ("-place.user_favorites", "-user.user_favorites")
     
     __table_args__ = (db.UniqueConstraint('user_id', 'place_id'),)
