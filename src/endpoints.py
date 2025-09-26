@@ -10,7 +10,7 @@ import requests
 
 from models import db, User, Place, Review, UserFavorite
 
-load_dotenv(".env")
+load_dotenv("../.env")
 
 user_excludes = ("-reviews", "-favorites")
 
