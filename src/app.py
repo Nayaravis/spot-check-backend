@@ -5,7 +5,7 @@ from werkzeug.exceptions import NotFound
 from flask_cors import CORS
 
 from endpoints import (
-    Users, UserByID,
+    Users, UserByID, Login,
     Places, PlaceByID,
     Reviews, ReviewByID,
     Favorites, FavoriteByID
@@ -33,9 +33,10 @@ def handle_not_found(e):
 
 api.add_resource(Users, "/users")
 api.add_resource(UserByID, "/users/<int:id>")
+api.add_resource(Login, "/login")
 api.add_resource(Places, "/places")
 api.add_resource(PlaceByID, "/places/<int:id>")
-api.add_resource(Favorites, "/users/<int:user_id>/favorites")
+api.add_resource(Favorites, "/favorites")  # Updated to not require user_id in URL
 api.add_resource(FavoriteByID, "/favorites/<int:id>")
 api.add_resource(Reviews, "/places/<int:place_id>/add_review") # add a review through a place
 api.add_resource(ReviewByID, "/reviews/<int:id>")

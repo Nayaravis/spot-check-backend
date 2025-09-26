@@ -1,10 +1,11 @@
 import json
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+import jwt
 
 from dotenv import load_dotenv
 from flask_restful import Resource
-from flask import request, make_response
+from flask import request, make_response, current_app
 import requests
 
 from models import db, User, Place, Review, UserFavorite
@@ -38,6 +39,65 @@ def parse_iso_date(date_string):
             except ValueError:
                 raise ValueError(f"Unable to parse date: {date_string}")
 
+def generate_jwt_token(user_id):
+    """Generate a JWT token for the given user ID"""
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.utcnow() + timedelta(days=7),  # Token expires in 7 days
+        'iat': datetime.utcnow()  # Issued at
+    }
+    
+    # Get secret key from environment or use a default
+    secret_key = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+    token = jwt.encode(payload, secret_key, algorithm='HS256')
+    return token
+
+def verify_jwt_token(token):
+    """Verify and decode a JWT token"""
+    try:
+        secret_key = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def get_current_user():
+    """Get the current user from the JWT token in the request headers"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return None
+    
+    try:
+        # Extract token from "Bearer <token>" format
+        token = auth_header.split(' ')[1]
+        payload = verify_jwt_token(token)
+        if not payload:
+            return None
+        
+        user_id = payload.get('user_id')
+        if not user_id:
+            return None
+        
+        return User.query.get(user_id)
+    except (IndexError, AttributeError):
+        return None
+
+def require_auth(f):
+    """Decorator to require authentication for endpoints"""
+    def decorated_function(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return make_response(
+                {"error": "Authentication required. Please provide a valid JWT token."},
+                401
+            )
+        # Add current user to kwargs so the endpoint can access it
+        kwargs['current_user'] = user
+        return f(*args, **kwargs)
+    return decorated_function
+
 def user_not_found():
     return make_response(
         {"error": "user not found"},
@@ -66,6 +126,15 @@ class Users(Resource):
     def post(self):
         request_body = request.get_json()
 
+        # Validate required fields
+        required_fields = ["email", "username", "password", "first_name", "last_name"]
+        for field in required_fields:
+            if field not in request_body or not request_body[field]:
+                return make_response(
+                    {"error": f"{field} is required"},
+                    400
+                )
+
         # Handle optional datetime fields
         created_at = parse_iso_date(request_body.get("created_at"))
         updated_at = parse_iso_date(request_body.get("updated_at"))
@@ -75,20 +144,32 @@ class Users(Resource):
             username=request_body["username"],
             first_name=request_body["first_name"],
             last_name=request_body["last_name"],
-            profile_picture_url=request_body["profile_picture_url"],
-            password_hash="vfnusdifn8934upldcae",
+            profile_picture_url=request_body.get("profile_picture_url"),
             created_at=created_at,
             updated_at=updated_at
         )
 
-        # password hashing placeholder
-        # new_user.password_hash = "vfnusdifn8934upldcae"
+        # Hash the password using the User model method
+        try:
+            new_user.set_password(request_body["password"])
+        except ValueError as e:
+            return make_response(
+                {"error": str(e)},
+                400
+            )
 
         db.session.add(new_user)
         db.session.commit()
 
+        # Generate JWT token for the new user
+        token = generate_jwt_token(new_user.id)
+
         return make_response(
-            new_user.to_dict(rules=user_excludes),
+            {
+                "user": new_user.to_dict(rules=user_excludes),
+                "token": token,
+                "message": "User created successfully"
+            },
             201
         )
 
@@ -147,6 +228,46 @@ class UserByID(Resource):
         return user_not_found()
 
 
+class Login(Resource):
+    def post(self):
+        request_body = request.get_json()
+        
+        # Validate required fields
+        if not request_body.get("email") or not request_body.get("password"):
+            return make_response(
+                {"error": "Email and password are required"},
+                400
+            )
+        
+        # Find user by email
+        user = User.query.filter_by(email=request_body["email"]).first()
+        
+        if not user:
+            return make_response(
+                {"error": "Invalid email or password"},
+                401
+            )
+        
+        # Check password
+        if not user.check_password(request_body["password"]):
+            return make_response(
+                {"error": "Invalid email or password"},
+                401
+            )
+        
+        # Generate JWT token
+        token = generate_jwt_token(user.id)
+        
+        return make_response(
+            {
+                "user": user.to_dict(rules=user_excludes),
+                "token": token,
+                "message": "Login successful"
+            },
+            200
+        )
+
+
 class Places(Resource):
     # implement fetching place data from the Google Places API
     def get(self):
@@ -175,7 +296,8 @@ class Places(Resource):
             200
         )
 
-    def post(self):
+    @require_auth
+    def post(self, current_user=None):
         request_body = request.get_json()
         
         # Extract data from Google Places API response structure
@@ -249,8 +371,9 @@ class PlaceByID(Resource):
         return place_not_found()
 
 class Favorites(Resource):
-    def get(self, user_id):
-        user_favorites = UserFavorite.query.filter_by(user_id=user_id).all()
+    @require_auth
+    def get(self, current_user=None):
+        user_favorites = UserFavorite.query.filter_by(user_id=current_user.id).all()
 
         favorites = [favorite.place.to_dict() for favorite in user_favorites]
 
@@ -261,10 +384,18 @@ class Favorites(Resource):
 
 
 class FavoriteByID(Resource):
-    def delete(self, id):
+    @require_auth
+    def delete(self, id, current_user=None):
         user_favorite = UserFavorite.query.where(UserFavorite.id == id).first()
 
         if user_favorite:
+            # Check if the favorite belongs to the current user
+            if user_favorite.user_id != current_user.id:
+                return make_response(
+                    {"error": "You can only delete your own favorites"},
+                    403
+                )
+            
             db.session.delete(user_favorite)
             db.session.commit()
 
@@ -276,7 +407,8 @@ class FavoriteByID(Resource):
         return favorite_not_found()
 
 class Reviews(Resource):
-    def post(self, place_id): # uses the place's ID to append a new 'Review'
+    @require_auth
+    def post(self, place_id, current_user=None): # uses the place's ID to append a new 'Review'
         place = Place.query.where(Place.id == place_id).first()
         request_body = request.get_json()
 
@@ -290,7 +422,7 @@ class Reviews(Resource):
                 )
             
             new_review = Review(
-                user_id=request_body["user_id"],
+                user_id=current_user.id,  # Use authenticated user
                 place_id=place_id,
                 rating=request_body["rating"],
                 title=request_body["title"],
@@ -308,11 +440,19 @@ class Reviews(Resource):
 
 
 class ReviewByID(Resource):
-    def patch(self, id):
+    @require_auth
+    def patch(self, id, current_user=None):
         review = Review.query.where(Review.id == id).first()
         request_body = request.get_json()
 
         if review:
+            # Check if the review belongs to the current user
+            if review.user_id != current_user.id:
+                return make_response(
+                    {"error": "You can only edit your own reviews"},
+                    403
+                )
+            
             for prop, val in request_body.items():
                 if val is not None:
                     # Handle datetime fields
@@ -334,11 +474,18 @@ class ReviewByID(Resource):
         
         return review_not_found()
 
-    def delete(self, id):
+    @require_auth
+    def delete(self, id, current_user=None):
         review = Review.query.where(Review.id == id).first()
-        request_body = request.get_json()
 
         if review:
+            # Check if the review belongs to the current user
+            if review.user_id != current_user.id:
+                return make_response(
+                    {"error": "You can only delete your own reviews"},
+                    403
+                )
+            
             db.session.delete(review)
             db.session.commit()
 
