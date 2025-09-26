@@ -66,16 +66,21 @@ class Place(db.Model, SerializerMixin):
     
     id = db.Column(db.Integer, primary_key=True)
     google_place_id = db.Column(db.String(255), unique=True, nullable=False)
-    name = db.Column(db.String(255), nullable=False)
-    address = db.Column(db.String(500))
-    phone = db.Column(db.String(50))
-    website = db.Column(db.String(500))
-    category = db.Column(db.String(100))
-    latitude = db.Column(db.Numeric(10, 8), nullable=False)
-    longitude = db.Column(db.Numeric(11, 8), nullable=False)
+    display_name = db.Column(db.String(255), nullable=False)  # from displayName.text
+    google_maps_uri = db.Column(db.String(1000))  # from googleMapsUri
+    icon_background_color = db.Column(db.String(20))  # from iconBackgroundColor
+    national_phone_number = db.Column(db.String(50))  # from nationalPhoneNumber
+    website_uri = db.Column(db.String(500))  # from websiteUri
+    postal_code = db.Column(db.String(20))  # from postalAddress.postalCode
+    region_code = db.Column(db.String(10))  # from postalAddress.regionCode
+    address_lines = db.Column(db.Text)  # from postalAddress.addressLines (JSON string)
+    types = db.Column(db.Text)  # from types array (JSON string)
+    photos = db.Column(db.Text)  # from photos array (JSON string)
+    # Keep existing fields that are still useful
+    latitude = db.Column(db.Numeric(10, 8))
+    longitude = db.Column(db.Numeric(11, 8))
     rating = db.Column(db.Integer)
     price_level = db.Column(db.Integer)
-    photo_reference = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     

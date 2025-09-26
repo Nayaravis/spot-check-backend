@@ -35,32 +35,35 @@ with app.app_context():
     # Create places
     place1 = Place(
         google_place_id='place_001',
-        name='Central Park Cafe',
-        address='123 Park Ave, New York, NY',
-        category='Restaurant',
+        display_name='Central Park Cafe',
+        address_lines='["123 Park Ave", "New York, NY"]',
+        types='["restaurant", "cafe", "food"]',
         latitude=40.7829,
         longitude=-73.9654,
-        rating=4.2
+        rating=4.2,
+        price_level=2
     )
     
     place2 = Place(
         google_place_id='place_002',
-        name='Brooklyn Bridge View',
-        address='Brooklyn Bridge, New York, NY',
-        category='Tourist Attraction',
+        display_name='Brooklyn Bridge View',
+        address_lines='["Brooklyn Bridge", "New York, NY"]',
+        types='["tourist_attraction", "landmark", "point_of_interest"]',
         latitude=40.7061,
         longitude=-73.9969,
-        rating=4.8
+        rating=4.8,
+        price_level=0
     )
     
     place3 = Place(
         google_place_id='place_003',
-        name='Times Square Deli',
-        address='Times Square, New York, NY',
-        category='Food',
+        display_name='Times Square Deli',
+        address_lines='["Times Square", "New York, NY"]',
+        types='["restaurant", "food", "deli"]',
         latitude=40.7580,
         longitude=-73.9855,
-        rating=3.9
+        rating=3.9,
+        price_level=1
     )
     
     db.session.add_all([place1, place2, place3])
