@@ -152,7 +152,7 @@ class Review(db.Model, SerializerMixin):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text)
     visit_date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.now()
+    created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
     @validates('rating')
