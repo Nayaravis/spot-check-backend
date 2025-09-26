@@ -124,7 +124,6 @@ class Places(Resource):
 
         response = requests.post("https://places.googleapis.com/v1/places:searchNearby", json=request_obj, headers={
             "Content-Type": "application/json",
-            "X-Goog-FieldMask": "places.displayName",
             "X-Goog-Api-Key": SECRET_KEY,
             "X-Goog-FieldMask": "places.displayName,places.postalAddress,places.id,places.iconBackgroundColor,places.googleMapsUri,places.nationalPhoneNumber,places.priceLevel,places.types,places.websiteUri,places.photos"
         })
@@ -136,18 +135,37 @@ class Places(Resource):
 
     def post(self):
         request_body = request.get_json()
+        
+        # Extract data from Google Places API response structure
+        place_data = request_body.get('place', request_body)  # Handle both direct place data and nested structure
+        
+        display_name_obj = place_data.get('displayName', {})
+        display_name = display_name_obj.get('text', '') if isinstance(display_name_obj, dict) else str(display_name_obj)
+        
+        postal_address = place_data.get('postalAddress', {})
+        address_lines = json.dumps(postal_address.get('addressLines', [])) if postal_address.get('addressLines') else None
+        postal_code = postal_address.get('postalCode')
+        region_code = postal_address.get('regionCode')
+        
+        types = json.dumps(place_data.get('types', [])) if place_data.get('types') else None
+        photos = json.dumps(place_data.get('photos', [])) if place_data.get('photos') else None
+        
         reviewed_place = Place(
-            google_place_id=request["place_id"],
-            name=request_body["name"],
-            address=request_body["address"],
-            phone=request_body["phone"],
-            website=request_body["website"],
-            category=request_body["category"],
-            latitude=request_body["latitude"],
-            longitude=request_body["longitude"],
-            rating=request_body["rating"],
-            price_level=request_body["price_level"],
-            photo_reference=request_body["photo_reference"]
+            google_place_id=place_data.get('id'),
+            display_name=display_name,
+            google_maps_uri=place_data.get('googleMapsUri'),
+            icon_background_color=place_data.get('iconBackgroundColor'),
+            national_phone_number=place_data.get('nationalPhoneNumber'),
+            website_uri=place_data.get('websiteUri'),
+            postal_code=postal_code,
+            region_code=region_code,
+            address_lines=address_lines,
+            types=types,
+            photos=photos,
+            latitude=request_body.get('latitude'),  # These might come from separate location data
+            longitude=request_body.get('longitude'),
+            rating=request_body.get('rating'),
+            price_level=place_data.get('priceLevel')
         )
 
         db.session.add(reviewed_place)
