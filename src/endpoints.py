@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, date
 
 from dotenv import load_dotenv
 from flask_restful import Resource
@@ -11,6 +12,31 @@ from models import db, User, Place, Review, UserFavorite
 load_dotenv(".env")
 
 user_excludes = ("-reviews", "-favorites")
+
+def parse_iso_date(date_string):
+    """
+    Convert ISO date string to Python date/datetime object.
+    Handles both date (YYYY-MM-DD) and datetime (YYYY-MM-DDTHH:MM:SS) formats.
+    """
+    if not date_string:
+        return None
+    
+    try:
+        # Try parsing as datetime first (ISO format with time)
+        if 'T' in date_string:
+            return datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        else:
+            # Parse as date only
+            return datetime.fromisoformat(date_string).date()
+    except ValueError:
+        # If ISO parsing fails, try other common formats
+        try:
+            return datetime.strptime(date_string, '%Y-%m-%d').date()
+        except ValueError:
+            try:
+                return datetime.strptime(date_string, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                raise ValueError(f"Unable to parse date: {date_string}")
 
 def user_not_found():
     return make_response(
@@ -40,13 +66,19 @@ class Users(Resource):
     def post(self):
         request_body = request.get_json()
 
+        # Handle optional datetime fields
+        created_at = parse_iso_date(request_body.get("created_at"))
+        updated_at = parse_iso_date(request_body.get("updated_at"))
+
         new_user = User(
             email=request_body["email"],
             username=request_body["username"],
             first_name=request_body["first_name"],
             last_name=request_body["last_name"],
             profile_picture_url=request_body["profile_picture_url"],
-            password_hash="vfnusdifn8934upldcae"    
+            password_hash="vfnusdifn8934upldcae",
+            created_at=created_at,
+            updated_at=updated_at
         )
 
         # password hashing placeholder
@@ -81,8 +113,18 @@ class UserByID(Resource):
 
         if user:
             for prop, val in request_body.items():
-                if val is not None or val.strip() != '':
-                    setattr(user, prop, val)
+                if val is not None:
+                    # Handle datetime fields
+                    if prop in ['created_at', 'updated_at']:
+                        parsed_date = parse_iso_date(val)
+                        if parsed_date:
+                            setattr(user, prop, parsed_date)
+                    else:
+                        # Handle string fields
+                        if isinstance(val, str) and val.strip() != '':
+                            setattr(user, prop, val)
+                        elif not isinstance(val, str):
+                            setattr(user, prop, val)
         
             return make_response(
                 user.to_dict(rules=user_excludes),
@@ -161,6 +203,10 @@ class Places(Resource):
         types = json.dumps(place_data.get('types', [])) if place_data.get('types') else None
         photos = json.dumps(place_data.get('photos', [])) if place_data.get('photos') else None
         
+        # Handle optional datetime fields
+        created_at = parse_iso_date(request_body.get('created_at'))
+        updated_at = parse_iso_date(request_body.get('updated_at'))
+        
         reviewed_place = Place(
             google_place_id=google_place_id,
             display_name=display_name,
@@ -176,7 +222,9 @@ class Places(Resource):
             latitude=request_body.get('latitude'),  # These might come from separate location data
             longitude=request_body.get('longitude'),
             rating=request_body.get('rating'),
-            price_level=place_data.get('priceLevel')
+            price_level=place_data.get('priceLevel'),
+            created_at=created_at,
+            updated_at=updated_at
         )
 
         db.session.add(reviewed_place)
@@ -233,13 +281,21 @@ class Reviews(Resource):
         request_body = request.get_json()
 
         if place:
+            # Handle visit_date conversion from ISO format
+            visit_date = parse_iso_date(request_body["visit_date"])
+            if not visit_date:
+                return make_response(
+                    {"error": "Invalid visit_date format. Use ISO format (YYYY-MM-DD)"},
+                    400
+                )
+            
             new_review = Review(
                 user_id=request_body["user_id"],
                 place_id=place_id,
                 rating=request_body["rating"],
                 title=request_body["title"],
                 content=request_body["content"],
-                visit_date=request_body["visit_date"],
+                visit_date=visit_date,
             )
 
             place.reviews.append(new_review)
@@ -259,7 +315,17 @@ class ReviewByID(Resource):
         if review:
             for prop, val in request_body.items():
                 if val is not None:
-                    setattr(review, prop, val)
+                    # Handle datetime fields
+                    if prop in ['visit_date', 'created_at', 'updated_at']:
+                        parsed_date = parse_iso_date(val)
+                        if parsed_date:
+                            setattr(review, prop, parsed_date)
+                    else:
+                        # Handle string fields
+                        if isinstance(val, str) and val.strip() != '':
+                            setattr(review, prop, val)
+                        elif not isinstance(val, str):
+                            setattr(review, prop, val)
 
             return make_response(
                 review.to_dict(),
