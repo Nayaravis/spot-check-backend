@@ -296,7 +296,6 @@ class Places(Resource):
             200
         )
 
-    @require_auth
     def post(self, current_user=None):
         request_body = request.get_json()
         
@@ -380,6 +379,46 @@ class Favorites(Resource):
         return make_response(
             favorites,
             200
+        )
+
+    @require_auth
+    def post(self, current_user=None):
+        data = request.get_json()
+        place_id = data.get("place_id")
+
+        # Validate input
+        if not place_id:
+            return make_response({"error": "place_id is required"}, 400)
+
+        # Ensure place exists
+        place = Place.query.where(Place.id == place_id).first()
+        if not place:
+            return place_not_found()
+
+        # Prevent duplicates (also enforced by unique constraint)
+        existing = UserFavorite.query.filter_by(user_id=current_user.id, place_id=place_id).first()
+        if existing:
+            return make_response(
+                {
+                    "message": "Place already in favorites",
+                    "favorite": existing.to_dict(),
+                    "place": place.to_dict(),
+                },
+                200,
+            )
+
+        # Create favorite
+        favorite = UserFavorite(user_id=current_user.id, place_id=place_id)
+        db.session.add(favorite)
+        db.session.commit()
+
+        return make_response(
+            {
+                "favorite": favorite.to_dict(),
+                "place": place.to_dict(),
+                "message": "Added to favorites",
+            },
+            201,
         )
 
 
