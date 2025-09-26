@@ -139,6 +139,17 @@ class Places(Resource):
         # Extract data from Google Places API response structure
         place_data = request_body.get('place', request_body)  # Handle both direct place data and nested structure
         
+        # Check if place already exists
+        google_place_id = place_data.get('id')
+        existing_place = Place.query.filter_by(google_place_id=google_place_id).first()
+        
+        if existing_place:
+            # Place already exists, return it
+            return make_response(
+                existing_place.to_dict(),
+                200
+            )
+        
         display_name_obj = place_data.get('displayName', {})
         display_name = display_name_obj.get('text', '') if isinstance(display_name_obj, dict) else str(display_name_obj)
         
@@ -151,7 +162,7 @@ class Places(Resource):
         photos = json.dumps(place_data.get('photos', [])) if place_data.get('photos') else None
         
         reviewed_place = Place(
-            google_place_id=place_data.get('id'),
+            google_place_id=google_place_id,
             display_name=display_name,
             google_maps_uri=place_data.get('googleMapsUri'),
             icon_background_color=place_data.get('iconBackgroundColor'),

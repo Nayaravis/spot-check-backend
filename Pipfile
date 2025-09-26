@@ -11,6 +11,7 @@ flask-restful = "*"
 sqlalchemy-serializer = "*"
 requests = "*"
 dotenv = "*"
+flask-cors = "*"
 
 [dev-packages]
 
