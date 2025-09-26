@@ -1,0 +1,3 @@
+[submodule "client_code"]
+	path = client_code
+	url = git@github.com:Nayaravis/spot-check-frontend.git
