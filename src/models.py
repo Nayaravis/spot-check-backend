@@ -20,8 +20,8 @@ class User(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=db.func.now())
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
-    reviews = db.relationship('Review', cascade='all, delete-orphan')
-    favorites = db.relationship('UserFavorite', cascade='all, delete-orphan')
+    reviews = db.relationship('Review',  cascade='all, delete-orphan')
+    favorites = db.relationship('UserFavorite', back_populates="user", cascade='all, delete-orphan')
 
     serialize_rules = ("-favorites.user", "-reviews.user", "-reviews.place")
     
@@ -201,7 +201,7 @@ class UserFavorite(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=db.func.now())
 
     place = db.relationship('Place', backref='user_favorites')
-    user = db.relationship('User', backref='user_favorites')
+    user = db.relationship('User', back_populates="user_favorites")
 
     serialize_rules = ("-place.user_favorites", "-user.user_favorites")
     
