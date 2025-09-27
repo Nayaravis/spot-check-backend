@@ -150,7 +150,7 @@ class Place(db.Model, SerializerMixin):
     
     @validates('price_level')
     def validate_price_level(self, key, price_level):
-        if price_level is not None and (price_level < 1 or price_level > 4):
+        if price_level is not None and (int(price_level) < 1 or int(price_level) > 4):
             raise ValueError('Price level must be between 1 and 4')
         return price_level
     
