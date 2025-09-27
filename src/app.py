@@ -40,3 +40,6 @@ api.add_resource(Favorites, "/favorites")  # Updated to not require user_id in U
 api.add_resource(FavoriteByID, "/favorites/<int:id>")
 api.add_resource(Reviews, "/places/<int:place_id>/add_review") # add a review through a place
 api.add_resource(ReviewByID, "/reviews/<int:id>")
+
+if __name__ == "__main__":
+    db.create_all()
