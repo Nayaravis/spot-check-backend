@@ -42,4 +42,5 @@ api.add_resource(Reviews, "/places/<int:place_id>/add_review") # add a review th
 api.add_resource(ReviewByID, "/reviews/<int:id>")
 
 if __name__ == "__main__":
-    db.create_all()
+    with app.app_context():
+        db.create_all()
