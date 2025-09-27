@@ -147,13 +147,7 @@ class Place(db.Model, SerializerMixin):
         if rating is not None and (rating < 0 or rating > 5):
             raise ValueError('Rating must be between 0 and 5')
         return rating
-    
-    @validates('price_level')
-    def validate_price_level(self, key, price_level):
-        if price_level is not None and (int(price_level) < 1 or int(price_level) > 4):
-            raise ValueError('Price level must be between 1 and 4')
-        return price_level
-    
+
     @validates('photo_reference')
     def validate_photo_reference(self, key, photo_ref):
         if photo_ref and not photo_ref.strip():
