@@ -201,7 +201,7 @@ class UserFavorite(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=db.func.now())
 
     place = db.relationship('Place', backref='user_favorites')
-    user = db.relationship('User', back_populates="favourites")
+    user = db.relationship('User', back_populates="favorites")
 
     serialize_rules = ("-place.user_favorites", "-user.favorites")
     
