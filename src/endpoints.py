@@ -55,7 +55,7 @@ def generate_jwt_token(user_id):
 def verify_jwt_token(token):
     """Verify and decode a JWT token"""
     try:
-        secret_key = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+        secret_key = os.getenv('JWT_SECRET_KEY', 'id0nth@ve1navisayara@gmail.com')
         payload = jwt.decode(token, secret_key, algorithms=['HS256'])
         return payload
     except jwt.ExpiredSignatureError:
